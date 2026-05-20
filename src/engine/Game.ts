@@ -103,6 +103,17 @@ export class Game {
     btnChestAccept.addEventListener('click', () => {
       this.acceptChestReward();
     });
+
+    // Toggle pause/resume with Escape or P keys
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') {
+        if (this.state === 'playing') {
+          this.pauseGame();
+        } else if (this.state === 'paused') {
+          this.resumeGame();
+        }
+      }
+    });
   }
 
   public startGame() {
@@ -274,14 +285,6 @@ export class Game {
   }
 
   private update(dt: number) {
-    // Handle Global Key shortcuts (like P for pause)
-    if (this.input.isDown('p')) {
-      if (this.state === 'playing') {
-        this.pauseGame();
-      } else if (this.state === 'paused') {
-        this.resumeGame();
-      }
-    }
 
     if (this.state !== 'playing') {
       // Pause screen or overlays: skip updating entities
@@ -388,7 +391,7 @@ export class Game {
             
             if (p.isFlame) {
               e.burnTimer = 3.0; // Burn for 3 seconds
-              e.burnDps = p.damage * 4.5; // Burn damage scales with flamethrower direct hit power
+              e.burnDps = p.burnDps || (p.damage * 4.5);
             } else {
               // Apply standard hit knockback (heavy for rockets, light for machine guns)
               const pushDir = p.vel.copy().normalize();
@@ -680,17 +683,42 @@ export class Game {
     xpBar.style.width = `${xpPct}%`;
     document.getElementById('xp-text')!.innerText = `Level ${this.level} (${Math.floor(xpPct)}%)`;
 
-    // Weapons List HUD
+    // Weapons & Passives List HUD
     const weaponsList = document.getElementById('weapons-list')!;
     weaponsList.innerHTML = '';
+    
+    // 1. Draw Active Weapons
     for (const weapon of this.player.weapons) {
       const isEvolved = weapon.level >= 5;
       weaponsList.innerHTML += `
         <div class="hud-weapon-icon ${isEvolved ? 'evolved-weapon' : ''}">
-          <span class="weapon-name">${weapon.name}</span>
+          <span class="weapon-name">🔫 ${weapon.name}</span>
           <span class="weapon-lvl">Lv.${weapon.level}</span>
         </div>
       `;
+    }
+
+    // 2. Draw Active Passives
+    const passiveMetadata: { [key: string]: { name: string; icon: string } } = {
+      firerate: { name: 'Supercharger', icon: '🔌' },
+      damage: { name: 'Powder Powder', icon: '💥' },
+      range: { name: 'Targeting Array', icon: '🎯' },
+      maxhp: { name: 'Heavy Armor', icon: '🧱' },
+      speed: { name: 'Turbo Engine', icon: '🏎️' },
+      magnet: { name: 'Attraction Magnet', icon: '🧲' },
+      regen: { name: 'Repair Kit', icon: '🔧' }
+    };
+
+    for (const [key, meta] of Object.entries(passiveMetadata)) {
+      const lvl = this.upgradeManager.itemLevels.get(key) || 0;
+      if (lvl > 0) {
+        weaponsList.innerHTML += `
+          <div class="hud-weapon-icon" style="border-color: rgba(255, 200, 0, 0.2); background: rgba(255, 200, 0, 0.03);">
+            <span class="weapon-name" style="color: #ffd700;">${meta.icon} ${meta.name}</span>
+            <span class="weapon-lvl" style="color: #ffd700; background: rgba(255, 200, 0, 0.15);">Lv.${lvl}</span>
+          </div>
+        `;
+      }
     }
   }
 

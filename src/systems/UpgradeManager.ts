@@ -608,11 +608,13 @@ export class UpgradeManager {
         const offset = (Math.random() - 0.5) * spread;
         const finalAngle = baseAngle + offset;
         
-        // Stats scaling with player's targeting range (shorter but similar to MG)
-        const maxFlameRange = player.range * 0.82; 
-        const speed = (maxFlameRange * 1.5) + Math.random() * 80;
+        // Buff range (balanced to cover 3.0x player range, ~840 pixels)
+        const maxFlameRange = player.range * 3.0; 
+        const speed = 650 + Math.random() * 120;
         const size = lvl >= 2 ? 14 : 9;
-        const damage = (lvl >= 2 ? 3.5 : 2.5) * player.damageModifier;
+        // Projectile damage reduced significantly; DoT is primary source of dmg
+        const damage = (lvl >= 2 ? 0.8 : 0.5) * player.damageModifier;
+        const burnDps = (lvl >= 2 ? 24 : 15) * player.damageModifier;
 
         const vel = Vector2D.fromAngle(finalAngle).mult(speed);
 
@@ -624,7 +626,8 @@ export class UpgradeManager {
             size: size,
             isFlame: true,
             penetration: 99, // passes through everything
-            bombTimer: life // use bombTimer for flame lifespan
+            bombTimer: life, // use bombTimer for flame lifespan
+            burnDps: burnDps
           })
         );
       }
@@ -669,6 +672,7 @@ export class UpgradeManager {
           isRocket: true,
           explosionRadius: blastRadius,
           trailColor: 'rgba(255, 100, 0, 0.25)',
+          isHomingRocket: true
         })
       );
     }

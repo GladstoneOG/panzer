@@ -35,6 +35,7 @@ export class Player extends Entity {
   // Weapons
   public weapons: Weapon[] = [];
   public minions: Minion[] = [];
+  private mainCannonCooldown: number = 0.5; // short delay before first shot
 
   // Visuals & Aiming
   public turretAngle: number = -Math.PI / 2;
@@ -126,6 +127,28 @@ export class Player extends Entity {
       const angleDiff = targetAngle - this.turretAngle;
       const smoothDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff));
       this.turretAngle += smoothDiff * Math.min(1.0, dt * 5);
+    }
+
+    // Fire permanent Main Tank Turret Cannon
+    this.mainCannonCooldown -= dt;
+    if (this.mainCannonCooldown <= 0) {
+      this.mainCannonCooldown = 2.2 * this.fireRateModifier;
+
+      const shellSpeed = 350;
+      // Damage scales with level (starts at 45 at level 1, +10 per level)
+      const shellDamage = (35 + 10 * game.level) * this.damageModifier;
+      const velX = Math.cos(this.turretAngle) * shellSpeed;
+      const velY = Math.sin(this.turretAngle) * shellSpeed;
+
+      game.projectiles.push(
+        new Projectile(this.pos.x, this.pos.y, velX, velY, shellDamage, false, {
+          color: '#e5e5e5', // Light metallic tank shell
+          size: 9,
+          isRocket: true,
+          explosionRadius: 65
+        })
+      );
+      soundManager.playShoot();
     }
 
     // Update weapons cooldown & fire

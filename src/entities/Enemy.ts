@@ -123,22 +123,42 @@ export class Enemy extends Entity {
       const tickDamage = this.burnDps * dt;
       this.takeDamage(tickDamage, true); // true = flame damage
 
-      // Spawn burning particles occasionally
-      if (Math.random() < 0.2) {
+      // Spawn burning particles occasionally (rich flame & ember effect)
+      if (Math.random() < 0.45) {
+        // Red/orange flame smoke particle
         game.spawnParticle(
           new Particle(
-            this.pos.x + (Math.random() - 0.5) * this.width * 0.6,
-            this.pos.y + (Math.random() - 0.5) * this.height * 0.6,
-            (Math.random() - 0.5) * 1.5,
-            -Math.random() * 2 - 1.0,
+            this.pos.x + (Math.random() - 0.5) * this.width * 0.5,
+            this.pos.y + (Math.random() - 0.5) * this.height * 0.5,
+            (Math.random() - 0.5) * 1.2,
+            -Math.random() * 2.5 - 1.5, // float upwards faster
             {
-              color: Math.random() > 0.4 ? '#ff5500' : '#ffaa00',
-              size: Math.random() * 4 + 2,
-              decay: 0.05,
+              color: Math.random() > 0.4 ? '#ff4500' : '#ffaa00', // vibrant red-orange or yellow-orange
+              size: Math.random() * 5 + 4, // slightly larger
+              decay: 0.035, // lasts a bit longer
               type: 'smoke',
+              glow: true
             }
           )
         );
+
+        // Crackling spark/ember particle drifting off
+        if (Math.random() < 0.3) {
+          game.spawnParticle(
+            new Particle(
+              this.pos.x,
+              this.pos.y,
+              (Math.random() - 0.5) * 4.0, // scatter sideways
+              -Math.random() * 3.5 - 0.5,
+              {
+                color: '#ffe57f', // bright hot yellow spark
+                size: Math.random() * 2 + 1,
+                decay: 0.06,
+                type: 'spark'
+              }
+            )
+          );
+        }
       }
     }
 
@@ -267,7 +287,9 @@ export class Enemy extends Entity {
 
   public takeDamage(damage: number, isFlame: boolean = false) {
     this.hp -= damage;
-    this.hitFlashTimer = 0.08; // Flash white for 80ms
+    if (!isFlame) {
+      this.hitFlashTimer = 0.08; // Flash white for 80ms
+    }
     this.isFlameDamaged = isFlame;
 
     const game = (window as any).gameInstance as Game;
@@ -389,6 +411,19 @@ export class Enemy extends Entity {
 
     // Render based on Enemy Type
     ctx.translate(this.pos.x, this.pos.y);
+
+    // Render fire aura if burning
+    if (this.burnTimer > 0) {
+      ctx.save();
+      ctx.globalAlpha = 0.45 + Math.sin(this.animTimer * 18) * 0.15; // flicker
+      ctx.fillStyle = '#ff6600';
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = '#ff2200';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, this.width * 0.7, this.height * 0.7, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
 
     switch (this.type) {
       case 'infantry':

@@ -2,6 +2,7 @@ import { Entity } from './Entity';
 import { Game } from '../engine/Game';
 import { Vector2D } from '../engine/Vector2D';
 import { Particle } from './Particle';
+import { Enemy } from './Enemy';
 import { soundManager } from '../engine/SoundManager';
 
 export interface ProjectileOptions {
@@ -17,6 +18,8 @@ export interface ProjectileOptions {
   penetration?: number;
   explosionRadius?: number;
   isLightningChain?: boolean;
+  isHomingRocket?: boolean;
+  burnDps?: number;
 }
 
 export class Projectile extends Entity {
@@ -37,6 +40,9 @@ export class Projectile extends Entity {
   public penetration: number = 1;
   public explosionRadius: number = 0;
   public isLightningChain: boolean = false;
+  public isHomingRocket: boolean = false;
+  public homingSpeed: number = 150;
+  public burnDps: number = 0;
 
   private trailHistory: Vector2D[] = [];
   private lifeTimer: number = 0;
@@ -75,9 +81,19 @@ export class Projectile extends Entity {
     this.penetration = options.penetration !== undefined ? options.penetration : 1;
     this.explosionRadius = options.explosionRadius || 0;
     this.isLightningChain = options.isLightningChain || false;
+    this.isHomingRocket = options.isHomingRocket || false;
+    this.burnDps = options.burnDps || 0;
+
+    if (this.isHomingRocket) {
+      this.homingSpeed = 150;
+      const mag = this.vel.mag();
+      if (mag > 0) {
+        this.vel.set((this.vel.x / mag) * 150, (this.vel.y / mag) * 150);
+      }
+    }
 
     if (this.isFlame) {
-      this.maxLife = 0.45; // Flames fade quickly
+      this.maxLife = 1.6; // Extended reach, lives for 1.6 seconds
     } else if (this.isMine) {
       this.maxLife = 15; // Mines last 15s on ground
     } else if (this.isBomb) {
@@ -98,12 +114,40 @@ export class Projectile extends Entity {
 
     // --- SPECIAL BEHAVIOR ---
     if (this.isFlame) {
-      // Slow down flame particles as they expand
-      this.vel.x *= Math.pow(0.9, dt * 60);
-      this.vel.y *= Math.pow(0.9, dt * 60);
-      this.width += 40 * dt; // expand width
-      this.height += 40 * dt;
+      // Slow down flame particles LESS so they travel further
+      this.vel.x *= Math.pow(0.965, dt * 60);
+      this.vel.y *= Math.pow(0.965, dt * 60);
+      this.width += 105 * dt; // Expand wider as they travel
+      this.height += 105 * dt;
       this.radius = this.width / 2;
+    }
+
+    if (this.isHomingRocket) {
+      // Accelerate speed: start slow, build up to 600 px/sec
+      this.homingSpeed = Math.min(600, this.homingSpeed + 450 * dt);
+
+      // Lock nearest target
+      let target: Enemy | null = null;
+      let nearestDistSq = Infinity;
+      for (const e of game.enemies) {
+        if (!e.active) continue;
+        const dSq = this.pos.distSq(e.pos);
+        if (dSq < nearestDistSq) {
+          nearestDistSq = dSq;
+          target = e;
+        }
+      }
+
+      if (target) {
+        const targetDir = target.pos.sub(this.pos).normalize();
+        const currentDir = this.vel.copy().normalize();
+        // Blend current heading with target heading for smooth guided turning circles
+        const blendDir = currentDir.mult(1 - Math.min(1.0, dt * 8)).add(targetDir.mult(Math.min(1.0, dt * 8))).normalize();
+        this.vel = blendDir.mult(this.homingSpeed);
+      } else {
+        const currentDir = this.vel.magSq() > 0 ? this.vel.copy().normalize() : new Vector2D(0, -1);
+        this.vel = currentDir.mult(this.homingSpeed);
+      }
     }
 
     if (this.isBomb) {
