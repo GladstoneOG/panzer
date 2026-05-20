@@ -16,9 +16,24 @@ export class Enemy extends Entity {
   public contactDamage: number = 10;
   public isMiniBoss: boolean = false;
   
+  // Physics Knockback
+  public knockbackVel: Vector2D = new Vector2D(0, 0);
+
+  // Flame Burn DoT
+  public burnTimer: number = 0;
+  public burnDps: number = 0;
+
+  // Slowdown effects
+  public speedMultiplier: number = 1.0;
+  
   // Scoring / Drop
   public scoreValue: number;
   public xpValue: number;
+
+  public applyKnockback(dir: Vector2D, force: number): void {
+    const kVec = dir.normalize().mult(force);
+    this.knockbackVel = this.knockbackVel.add(kVec);
+  }
 
   // Firing logic
   private fireCooldown: number = 0;
@@ -102,45 +117,71 @@ export class Enemy extends Entity {
       this.hitFlashTimer -= dt;
     }
 
+    // --- HANDLE FLAME BURN DOT ---
+    if (this.burnTimer > 0) {
+      this.burnTimer -= dt;
+      const tickDamage = this.burnDps * dt;
+      this.takeDamage(tickDamage, true); // true = flame damage
+
+      // Spawn burning particles occasionally
+      if (Math.random() < 0.2) {
+        game.spawnParticle(
+          new Particle(
+            this.pos.x + (Math.random() - 0.5) * this.width * 0.6,
+            this.pos.y + (Math.random() - 0.5) * this.height * 0.6,
+            (Math.random() - 0.5) * 1.5,
+            -Math.random() * 2 - 1.0,
+            {
+              color: Math.random() > 0.4 ? '#ff5500' : '#ffaa00',
+              size: Math.random() * 4 + 2,
+              decay: 0.05,
+              type: 'smoke',
+            }
+          )
+        );
+      }
+    }
+
+    // Decay knockback velocity smoothly
+    this.knockbackVel.x *= Math.max(0, 1 - 10 * dt);
+    this.knockbackVel.y *= Math.max(0, 1 - 10 * dt);
+
     // --- MOVEMENT BEHAVIOR ---
     switch (this.type) {
       case 'infantry':
-        // Slow direct tracking towards player
         const toPlayer = game.player.pos.sub(this.pos).normalize();
         this.vel.set(toPlayer.x * this.speed, toPlayer.y * this.speed);
         break;
 
       case 'bike':
-        // Fast straight charge diagonally downwards
         if (this.vel.magSq() === 0) {
-          // pick a down-diagonal direction
           const dx = Math.random() > 0.5 ? 1 : -1;
           this.vel.set(dx * this.speed * 0.7, this.speed * 0.75);
         }
         break;
 
       case 'jeep':
-        // Flank movement: head down, drift left/right periodically
         const drift = Math.sin(this.animTimer * 2) * 50;
         this.vel.set(drift, this.speed);
         break;
 
       case 'tank':
-        // Slowly advance downwards, adjusting toward player horizontally
         const dxToPlayer = game.player.pos.x - this.pos.x;
         const tankXSpeed = Math.abs(dxToPlayer) > 10 ? Math.sign(dxToPlayer) * this.speed * 0.5 : 0;
         this.vel.set(tankXSpeed, this.speed * 0.8);
         break;
 
       case 'bomber':
-        // Flying bomber plane, goes straight down the screen super fast
         this.vel.set(0, this.speed);
         break;
     }
 
-    // Apply movement
-    this.pos.x += this.vel.x * dt;
-    this.pos.y += this.vel.y * dt;
+    // Apply movement with speed multiplier and knockback velocity
+    this.pos.x += (this.vel.x * this.speedMultiplier + this.knockbackVel.x) * dt;
+    this.pos.y += (this.vel.y * this.speedMultiplier + this.knockbackVel.y) * dt;
+
+    // Reset speed multiplier for next frame (re-evaluated by mud pits)
+    this.speedMultiplier = 1.0;
 
     // Remove if left bottom of screen
     if (this.pos.y > game.canvas.height + 80) {
@@ -156,7 +197,7 @@ export class Enemy extends Entity {
     this.fireCooldown -= dt;
     if (this.fireCooldown <= 0) {
       this.fire(game);
-      this.fireCooldown = this.fireInterval + Math.random() * 0.5; // randomize reload slightly
+      this.fireCooldown = this.fireInterval + Math.random() * 0.5;
     }
   }
 

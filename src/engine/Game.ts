@@ -8,6 +8,7 @@ import { Particle } from '../entities/Particle';
 import { SpawnManager } from '../systems/SpawnManager';
 import { UpgradeManager } from '../systems/UpgradeManager';
 import { Vector2D } from './Vector2D';
+import { Obstacle } from '../entities/Obstacle';
 
 export type GameState = 'menu' | 'character_select' | 'playing' | 'paused' | 'gameover' | 'levelup' | 'chest_open';
 
@@ -44,8 +45,8 @@ export class Game {
   // Background scrolling
   private bgY: number = 0;
   public bgSpeed: number = 40; // Pixels per second
-  private craters: Array<{ x: number; y: number; size: number }> = [];
-  private trees: Array<{ x: number; y: number; size: number }> = [];
+  public obstacles: Obstacle[] = [];
+  private obstacleSpawnTimer: number = 0;
 
   // Frame rate & timing
   private lastTime: number = 0;
@@ -82,23 +83,17 @@ export class Game {
   }
 
   private initBackground() {
-    const initialHeight = window.innerHeight * 2;
+    this.obstacles = [];
+    const height = window.innerHeight;
     const width = window.innerWidth;
 
-    for (let i = 0; i < 15; i++) {
-      this.craters.push({
-        x: Math.random() * width,
-        y: Math.random() * initialHeight - window.innerHeight,
-        size: Math.random() * 30 + 15,
-      });
-    }
-
-    for (let i = 0; i < 20; i++) {
-      this.trees.push({
-        x: Math.random() * width,
-        y: Math.random() * initialHeight - window.innerHeight,
-        size: Math.random() * 20 + 15,
-      });
+    // Spawn initial obstacles scattered vertically across the canvas
+    for (let i = 0; i < 10; i++) {
+      const type = Math.random() > 0.4 ? 'tree' : 'mud_pit';
+      const x = Math.random() * (width - 100) + 50;
+      // Scatter from upper half down to near player
+      const y = Math.random() * (height * 1.5) - height * 0.7; 
+      this.obstacles.push(new Obstacle(x, y, type));
     }
   }
 
@@ -126,6 +121,7 @@ export class Game {
     
     this.spawnManager.reset();
     this.upgradeManager.reset();
+    this.initBackground();
 
     // Go to Starting weapon select screen
     this.state = 'character_select';
@@ -331,6 +327,19 @@ export class Game {
     this.collectibles.forEach((c) => c.update(dt, this));
     this.collectibles = this.collectibles.filter((c) => c.active);
 
+    // Update Obstacles
+    this.obstacles.forEach((o) => o.update(dt, this));
+    this.obstacles = this.obstacles.filter((o) => o.active);
+
+    // Spawn Obstacles over time
+    this.obstacleSpawnTimer -= dt;
+    if (this.obstacleSpawnTimer <= 0) {
+      const type = Math.random() > 0.4 ? 'tree' : 'mud_pit';
+      const x = Math.random() * (this.canvas.width - 100) + 50;
+      this.obstacles.push(new Obstacle(x, -60, type));
+      this.obstacleSpawnTimer = 1.5 + Math.random() * 1.5; // Every 1.5 - 3.0s
+    }
+
     // Update Particles
     this.particles.forEach((p) => p.update(dt, this));
     this.particles = this.particles.filter((p) => p.active);
@@ -360,7 +369,7 @@ export class Game {
       }
     }
 
-    // 2. Projectiles colliding with targets
+    // 2. Projectiles colliding with targets and obstacles
     for (const p of this.projectiles) {
       if (!p.active) continue;
 
@@ -376,23 +385,88 @@ export class Game {
           if (!e.active) continue;
           if (e.isCollidingWith(p)) {
             e.takeDamage(p.damage, p.isFlame || false);
+            
+            if (p.isFlame) {
+              e.burnTimer = 3.0; // Burn for 3 seconds
+              e.burnDps = p.damage * 4.5; // Burn damage scales with flamethrower direct hit power
+            } else {
+              // Apply standard hit knockback (heavy for rockets, light for machine guns)
+              const pushDir = p.vel.copy().normalize();
+              const force = p.isRocket ? 130 : 65; 
+              e.applyKnockback(pushDir, force);
+            }
+
             p.hit();
             if (!p.active) break;
+          }
+        }
+
+        // Collide with Tree Obstacles (blockers)
+        if (p.active) {
+          for (const o of this.obstacles) {
+            if (!o.active || o.type !== 'tree') continue;
+            if (o.isCollidingWith(p)) {
+              o.takeDamage(p.damage, this);
+              p.hit();
+              if (!p.active) break;
+            }
           }
         }
       }
     }
 
-    // 3. Enemies colliding with Player directly (contact damage)
+    // 3. Solid Tree and slowing Mud Pit collisions
+    for (const o of this.obstacles) {
+      if (!o.active) continue;
+
+      if (o.type === 'tree') {
+        // Player vs Tree solid sliding
+        const pDist = this.player.pos.dist(o.pos);
+        const pMin = this.player.radius + o.radius;
+        if (pDist < pMin) {
+          const overlap = pMin - pDist;
+          const push = this.player.pos.sub(o.pos).normalize();
+          this.player.pos = this.player.pos.add(push.mult(overlap));
+        }
+
+        // Enemies vs Tree solid sliding
+        for (const e of this.enemies) {
+          if (!e.active) continue;
+          const eDist = e.pos.dist(o.pos);
+          const eMin = e.radius + o.radius;
+          if (eDist < eMin) {
+            const overlap = eMin - eDist;
+            const push = e.pos.sub(o.pos).normalize();
+            e.pos = e.pos.add(push.mult(overlap));
+          }
+        }
+      } else if (o.type === 'mud_pit') {
+        // Player slows down in mud pits
+        const pDist = this.player.pos.dist(o.pos);
+        if (pDist < o.radius) {
+          this.player.speedMultiplier = 0.6; // 40% speed penalty
+        }
+
+        // Enemies slow down in mud pits
+        for (const e of this.enemies) {
+          if (!e.active) continue;
+          const eDist = e.pos.dist(o.pos);
+          if (eDist < o.radius) {
+            e.speedMultiplier = 0.6; // 40% speed penalty
+          }
+        }
+      }
+    }
+
+    // 4. Enemies colliding with Player directly (contact damage)
     for (const e of this.enemies) {
       if (!e.active) continue;
       if (this.player.isCollidingWith(e)) {
         this.player.takeDamage(e.contactDamage);
         
-        // Push enemy back slightly on collision
-        const pushDir = e.pos.sub(this.player.pos).normalize().mult(100);
-        e.pos.x += pushDir.x;
-        e.pos.y += pushDir.y;
+        // Push enemy back using clean physics knockback, rather than teleporting
+        const pushDir = e.pos.sub(this.player.pos).normalize();
+        e.applyKnockback(pushDir, 350); 
       }
     }
   }
@@ -408,6 +482,11 @@ export class Game {
     // Draw background
     this.drawBackground();
 
+    // Draw mud pit obstacles on the ground layer
+    this.obstacles.forEach((o) => {
+      if (o.type === 'mud_pit') o.draw(this.ctx);
+    });
+
     // Draw Collectibles
     this.collectibles.forEach((c) => c.draw(this.ctx));
 
@@ -415,6 +494,11 @@ export class Game {
     if (this.player && this.player.active) {
       this.player.drawTreads(this.ctx);
     }
+
+    // Draw tree obstacles on the surface layer
+    this.obstacles.forEach((o) => {
+      if (o.type === 'tree') o.draw(this.ctx);
+    });
 
     // Draw Enemies
     this.enemies.forEach((e) => e.draw(this.ctx));
@@ -466,50 +550,6 @@ export class Game {
     this.ctx.lineTo(roadX + roadWidth - 15, this.bgY + height * 2);
     this.ctx.stroke();
     this.ctx.setLineDash([]);
-
-    // Draw Craters
-    this.ctx.fillStyle = '#241b10'; // darker brown
-    this.ctx.strokeStyle = '#18120a';
-    this.ctx.lineWidth = 2;
-    for (const c of this.craters) {
-      const scrollY = (c.y + this.bgY) % (height * 2) - height;
-      this.ctx.beginPath();
-      this.ctx.arc(c.x, scrollY, c.size, 0, Math.PI * 2);
-      this.ctx.fill();
-      this.ctx.stroke();
-
-      // Inner rings
-      this.ctx.beginPath();
-      this.ctx.arc(c.x, scrollY, c.size * 0.6, 0, Math.PI * 2);
-      this.ctx.stroke();
-    }
-
-    // Draw Trees
-    for (const t of this.trees) {
-      const scrollY = (t.y + this.bgY) % (height * 2) - height;
-
-      // Tree shadow
-      this.ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
-      this.ctx.beginPath();
-      this.ctx.arc(t.x + 4, scrollY + 4, t.size, 0, Math.PI * 2);
-      this.ctx.fill();
-
-      // Tree foliage (layered circles)
-      this.ctx.fillStyle = '#1e3818'; // dark foliage
-      this.ctx.beginPath();
-      this.ctx.arc(t.x, scrollY, t.size, 0, Math.PI * 2);
-      this.ctx.fill();
-
-      this.ctx.fillStyle = '#2d5224'; // lighter green
-      this.ctx.beginPath();
-      this.ctx.arc(t.x - 2, scrollY - 2, t.size * 0.7, 0, Math.PI * 2);
-      this.ctx.fill();
-
-      this.ctx.fillStyle = '#3c6b30'; // highlight green
-      this.ctx.beginPath();
-      this.ctx.arc(t.x - 4, scrollY - 4, t.size * 0.4, 0, Math.PI * 2);
-      this.ctx.fill();
-    }
   }
 
   private drawCanvasStats() {

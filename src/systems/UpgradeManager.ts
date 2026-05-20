@@ -608,8 +608,8 @@ export class UpgradeManager {
         const offset = (Math.random() - 0.5) * spread;
         const finalAngle = baseAngle + offset;
         
-        // Stats scaling with player's targeting range
-        const maxFlameRange = player.range * 0.6; // short range modifier
+        // Stats scaling with player's targeting range (shorter but similar to MG)
+        const maxFlameRange = player.range * 0.82; 
         const speed = (maxFlameRange * 1.5) + Math.random() * 80;
         const size = lvl >= 2 ? 14 : 9;
         const damage = (lvl >= 2 ? 3.5 : 2.5) * player.damageModifier;
@@ -715,6 +715,8 @@ export class UpgradeManager {
 
       if (hit) {
         e.takeDamage(dmg, false);
+        const pushDir = Vector2D.fromAngle(sweepAngle);
+        e.applyKnockback(pushDir, 35); // light continuous knockback
       }
     }
 

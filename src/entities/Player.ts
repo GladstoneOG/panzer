@@ -25,6 +25,7 @@ export class Player extends Entity {
   public magnetRadius: number = 120;
   public hpRegen: number = 0; // health regen per second
   public range: number = 280; // lock-on targeting range
+  public speedMultiplier: number = 1.0;
   
   // Plasma Shield (Sci-Fi Evolved upgrade)
   public maxShieldHp: number = 0;
@@ -37,6 +38,7 @@ export class Player extends Entity {
 
   // Visuals & Aiming
   public turretAngle: number = -Math.PI / 2;
+  public predictedTargetPos: Vector2D | null = null;
   private treadHistory: Array<{ pos: Vector2D; angle: number }> = [];
   private currentMovementAngle: number = -Math.PI / 2;
 
@@ -53,6 +55,9 @@ export class Player extends Entity {
   }
 
   public update(dt: number, game: Game): void {
+    // Reset speed multiplier (re-evaluated by mud pits)
+    this.speedMultiplier = 1.0;
+
     // Invulnerability frames
     if (this.iFrames > 0) {
       this.iFrames -= dt;
@@ -74,8 +79,8 @@ export class Player extends Entity {
     // Movement
     const moveDir = game.input.getMovementVector();
     if (moveDir.magSq() > 0) {
-      this.pos.x += moveDir.x * this.speed * dt;
-      this.pos.y += moveDir.y * this.speed * dt;
+      this.pos.x += moveDir.x * this.speed * this.speedMultiplier * dt;
+      this.pos.y += moveDir.y * this.speed * this.speedMultiplier * dt;
       
       this.currentMovementAngle = moveDir.heading();
 
@@ -100,13 +105,22 @@ export class Player extends Entity {
     // Find nearest enemy for turret auto-aim (respecting Range bounds)
     const nearestEnemy = this.findNearestEnemy(game);
     if (nearestEnemy) {
-      const targetAngle = nearestEnemy.pos.sub(this.pos).heading();
-      // Smoothly rotate turret towards target
+      // Calculate target prediction (leading)
+      const dist = this.pos.dist(nearestEnemy.pos);
+      const estBulletSpeed = 500; // estimated average bullet speed
+      const travelTime = dist / estBulletSpeed;
+      
+      // P_future = P_current + V_current * travelTime
+      this.predictedTargetPos = nearestEnemy.pos.add(nearestEnemy.vel.mult(travelTime));
+
+      const targetAngle = this.predictedTargetPos.sub(this.pos).heading();
+      // Smoothly rotate turret towards predicted target
       const angleDiff = targetAngle - this.turretAngle;
       // Normalize angle diff to [-PI, PI]
       const smoothDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff));
       this.turretAngle += smoothDiff * Math.min(1.0, dt * 10);
     } else {
+      this.predictedTargetPos = null;
       // Default aim forward (upwards)
       const targetAngle = -Math.PI / 2;
       const angleDiff = targetAngle - this.turretAngle;
@@ -461,7 +475,13 @@ export class Minion {
     this.cooldownMax = 0.5 * fireRateMod;
 
     if (nearest) {
-      const targetAngle = nearest.pos.sub(this.pos).heading();
+      // Calculate target prediction (leading) for minion
+      const dist = this.pos.dist(nearest.pos);
+      const estBulletSpeed = 650; // minion bullet speed
+      const travelTime = dist / estBulletSpeed;
+      const predictedPos = nearest.pos.add(nearest.vel.mult(travelTime));
+
+      const targetAngle = predictedPos.sub(this.pos).heading();
       // Smooth turret rotation
       const angleDiff = targetAngle - this.turretAngle;
       const smoothDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff));

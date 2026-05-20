@@ -213,6 +213,15 @@ export class Projectile extends Entity {
       if (dSq <= radSq) {
         // Deal full or falloff damage
         e.takeDamage(this.damage * 0.85); // Splash deal slightly less than direct
+        
+        // Apply radial knockback
+        const pushDir = e.pos.sub(this.pos);
+        const dist = pushDir.mag();
+        const dir = dist > 0 ? pushDir.normalize() : Vector2D.fromAngle(Math.random() * Math.PI * 2);
+        
+        const proximity = 1 - Math.min(1.0, dist / this.explosionRadius);
+        const force = 350 + proximity * 150; // Heavy push (350-500)
+        e.applyKnockback(dir, force);
       }
     }
   }
