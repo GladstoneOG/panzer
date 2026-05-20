@@ -1,0 +1,813 @@
+/* --- DESIGN SYSTEM & CSS VARIABLES --- */
+:root {
+  --font-title: 'Outfit', 'Inter', sans-serif;
+  --font-body: 'Inter', sans-serif;
+
+  /* HSL Tailored Colors */
+  --bg-dark: hsl(120, 10%, 6%);
+  --bg-glass: rgba(18, 25, 18, 0.72);
+  --bg-glass-heavy: rgba(10, 15, 10, 0.88);
+  --border-glass: rgba(255, 255, 255, 0.08);
+  --border-glass-glow: rgba(0, 255, 255, 0.2);
+
+  /* Neon Colors */
+  --neon-cyan: #00ffff;
+  --neon-magenta: #ff00ff;
+  --neon-yellow: #ffcc00;
+  --neon-green: #33ff66;
+  --neon-red: #ff3333;
+  --neon-orange: #ff7700;
+
+  /* Theme Text Colors */
+  --text-primary: #e0e5e0;
+  --text-secondary: #a0aaa0;
+  --text-muted: #6b776b;
+}
+
+/* --- BASE STYLING --- */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+}
+
+#game-canvas {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+#ui-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 2;
+  pointer-events: none; /* Let canvas capture lower mouse clicks if needed, but subelements will override */
+}
+
+/* --- GLASSMORPHISM UTILITY --- */
+.glass {
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  border: 1px solid var(--border-glass);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* --- OVERLAY SCREENS --- */
+.overlay-screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: auto; /* Allow interactions */
+}
+
+/* Main Menu Box */
+.menu-box {
+  width: 460px;
+  padding: 40px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.military-tag {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--neon-green);
+  border: 1px solid var(--neon-green);
+  padding: 4px 10px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.game-title {
+  font-family: var(--font-title);
+  font-weight: 900;
+  font-size: 42px;
+  line-height: 0.95;
+  color: #fff;
+  letter-spacing: -1px;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+}
+
+.game-title .subtitle {
+  font-size: 26px;
+  color: var(--neon-cyan);
+  text-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+  letter-spacing: 2px;
+}
+
+.game-desc {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+/* Key binds / controls */
+.controls-guide {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 10px 0;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.guide-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.key {
+  background: #333d33;
+  color: #fff;
+  border: 1px solid #556455;
+  border-bottom: 3px solid #222a22;
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-weight: bold;
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.badge {
+  background: rgba(0, 255, 255, 0.1);
+  color: var(--neon-cyan);
+  border: 1px solid rgba(0, 255, 255, 0.25);
+  font-size: 10px;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.guide-text {
+  font-size: 12px;
+  text-align: left;
+}
+
+/* --- BUTTONS --- */
+.btn {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 15px;
+  padding: 14px 28px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  width: 100%;
+  letter-spacing: 1px;
+}
+
+.btn-primary {
+  background: var(--neon-green);
+  color: #0c140a;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px rgba(51, 255, 102, 0.5);
+  background: #44ff77;
+}
+
+.btn-glow {
+  animation: pulse-glow 2s infinite alternate;
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  border: 1px solid var(--border-glass);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.mute-btn {
+  font-size: 12px;
+  padding: 8px 16px;
+  width: auto;
+}
+
+/* --- HUD LAYOUT --- */
+.hud-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 20px;
+}
+
+/* XP Tracker (Global Top) */
+#xp-bar-container {
+  width: calc(100% - 40px);
+  position: absolute;
+  top: 15px;
+  left: 20px;
+  height: 20px;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+}
+
+.glass-bar {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--border-glass);
+}
+
+.bar-fill {
+  height: 100%;
+  width: 0%;
+  transition: width 0.15s ease-out;
+}
+
+.xp-fill-color {
+  background: linear-gradient(90deg, #008855, var(--neon-green));
+  box-shadow: 0 0 10px var(--neon-green);
+}
+
+.bar-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: #fff;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+  font-family: var(--font-title);
+}
+
+/* HUD Top Header Area */
+.hud-header {
+  margin-top: 25px;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: none;
+}
+
+.hud-stat-box {
+  padding: 10px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 100px;
+}
+
+.stat-lbl {
+  font-size: 9px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  font-family: var(--font-title);
+}
+
+.stat-val {
+  font-size: 18px;
+  font-weight: 900;
+  color: #fff;
+  font-family: var(--font-title);
+}
+
+.hud-center-timer {
+  padding: 6px 20px;
+  font-size: 22px;
+  font-weight: bold;
+  font-family: monospace;
+  color: var(--neon-yellow);
+  text-shadow: 0 0 6px rgba(255, 204, 0, 0.3);
+}
+
+/* HUD Bottom Left (Health/Shields) */
+.hud-bottom-left {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 250px;
+  pointer-events: auto;
+}
+
+.hud-bar-container {
+  padding: 8px 12px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bar-icon-label {
+  font-size: 9px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  font-family: var(--font-title);
+  color: var(--text-secondary);
+}
+
+.bar-frame {
+  height: 8px;
+  width: 100%;
+  background: rgba(0,0,0,0.5);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.hp-fill-color {
+  background: linear-gradient(90deg, #aa0000, var(--neon-red));
+  box-shadow: 0 0 8px var(--neon-red);
+}
+
+.shield-fill-color {
+  background: linear-gradient(90deg, #0088cc, var(--neon-cyan));
+  box-shadow: 0 0 8px var(--neon-cyan);
+}
+
+.bar-values {
+  font-size: 10px;
+  text-align: right;
+  font-weight: bold;
+  font-family: monospace;
+  color: #fff;
+}
+
+/* HUD Bottom Right (Weapons Inventory) */
+.hud-bottom-right {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: auto;
+}
+
+.weapons-header {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  font-family: var(--font-title);
+  color: var(--text-muted);
+  text-align: right;
+}
+
+.weapons-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hud-weapon-icon {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-glass);
+  border-radius: 6px;
+  padding: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.hud-weapon-icon.evolved-weapon {
+  border: 1px solid rgba(0, 255, 255, 0.4);
+  background: rgba(0, 255, 255, 0.05);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.1);
+  animation: glow-pulse-weapon 1.5s infinite alternate;
+}
+
+.weapon-name {
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.weapon-lvl {
+  font-size: 10px;
+  font-weight: bold;
+  font-family: monospace;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--neon-cyan);
+}
+
+.evolved-weapon .weapon-lvl {
+  background: rgba(0, 255, 255, 0.2);
+  color: #fff;
+  text-shadow: 0 0 5px #fff;
+}
+
+.hud-mute-btn {
+  position: absolute;
+  top: 75px;
+  right: 20px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  color: #fff;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.2s;
+  pointer-events: auto;
+}
+
+.hud-mute-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* --- TACTICAL PAUSE OVERLAY --- */
+.pause-box {
+  padding: 30px;
+  gap: 16px;
+}
+
+/* --- GAME OVER OVERLAY --- */
+.gameover-box {
+  border: 1px solid var(--neon-red);
+}
+
+.critical-tag {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--neon-red);
+  border: 1px solid var(--neon-red);
+  padding: 4px 10px;
+  border-radius: 4px;
+}
+
+.gameover-title {
+  font-family: var(--font-title);
+  font-weight: 900;
+  font-size: 32px;
+  color: #fff;
+  text-shadow: 0 0 15px rgba(255, 0, 0, 0.4);
+}
+
+.final-stats {
+  width: 100%;
+  padding: 16px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  font-family: var(--font-title);
+}
+
+.final-stat-row {
+  font-size: 15px;
+  color: var(--text-secondary);
+}
+
+/* --- LEVEL UP CARD OVERLAY --- */
+.levelup-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+.levelup-title {
+  font-family: var(--font-title);
+  font-weight: 900;
+  font-size: 38px;
+  color: #fff;
+  letter-spacing: 1px;
+  text-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+}
+
+.levelup-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+}
+
+.upgrades-container {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+}
+
+/* Upgrade Card design */
+.upgrade-card {
+  width: 220px;
+  height: 280px;
+  background: var(--bg-glass-heavy);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+}
+
+.upgrade-card:hover {
+  transform: translateY(-8px);
+  border: 1px solid var(--neon-cyan);
+  box-shadow: 0 15px 30px rgba(0, 255, 255, 0.25);
+}
+
+.upgrade-icon {
+  font-size: 40px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.upgrade-title {
+  font-family: var(--font-title);
+  font-weight: 800;
+  font-size: 15px;
+  color: #fff;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.2;
+}
+
+.upgrade-desc {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  height: 90px;
+  overflow: hidden;
+}
+
+/* Special Evolution Card styling (for Evolved tiers!) */
+.upgrade-card.evolved-card {
+  border: 1px dashed var(--neon-magenta);
+  background: linear-gradient(135deg, rgba(20, 10, 25, 0.85), rgba(10, 20, 25, 0.85));
+  box-shadow: 0 10px 25px rgba(255, 0, 255, 0.15);
+  animation: card-evolve-glow 2.5s infinite alternate;
+}
+
+.upgrade-card.evolved-card:hover {
+  border: 1px solid var(--neon-magenta);
+  box-shadow: 0 15px 35px rgba(255, 0, 255, 0.4);
+}
+
+.evolved-card .upgrade-title {
+  color: var(--neon-magenta);
+  text-shadow: 0 0 10px rgba(255, 0, 255, 0.4);
+}
+
+/* --- ANIMATIONS --- */
+@keyframes pulse-glow {
+  0% {
+    box-shadow: 0 0 12px rgba(51, 255, 102, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 24px rgba(51, 255, 102, 0.7);
+  }
+}
+
+@keyframes glow-pulse-weapon {
+  0% {
+    box-shadow: 0 0 5px rgba(0, 255, 255, 0.1);
+  }
+  100% {
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+  }
+}
+
+@keyframes card-evolve-glow {
+  0% {
+    box-shadow: 0 0 10px rgba(255, 0, 255, 0.15);
+    border-color: rgba(255, 0, 255, 0.3);
+  }
+  50% {
+    border-color: rgba(0, 255, 255, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.5);
+  }
+}
+
+/* --- STARTING WEAPON SELECTION --- */
+.weapon-select-box {
+  width: 900px;
+  max-width: 95vw;
+}
+.select-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+}
+
+/* --- SLOTS INDICATOR --- */
+.slots-indicator {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.slot-tag {
+  font-family: var(--font-title);
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--text-secondary);
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-glass);
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+.slot-tag span {
+  color: var(--neon-cyan);
+}
+
+/* --- TREASURE CHEST SPINNER --- */
+.chest-box {
+  position: relative;
+  background: var(--bg-glass-heavy) !important;
+  border: 2px solid var(--neon-yellow) !important;
+  padding: 40px;
+  width: 440px;
+  text-align: center;
+  box-shadow: 0 0 40px rgba(255, 204, 0, 0.3) !important;
+  overflow: hidden;
+}
+
+.chest-glow-effect {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 204, 0, 0.15) 0%, rgba(0, 0, 0, 0) 60%);
+  animation: chest-spin-glow 12s linear infinite;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.chest-title {
+  color: var(--neon-yellow);
+  text-shadow: 0 0 15px rgba(255, 204, 0, 0.5);
+  font-family: var(--font-title);
+  font-weight: 900;
+  font-size: 28px;
+  z-index: 1;
+  position: relative;
+}
+
+.chest-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 25px;
+  z-index: 1;
+  position: relative;
+}
+
+.chest-spinner-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 300px;
+  margin-bottom: 20px;
+  z-index: 1;
+  position: relative;
+}
+
+/* Spinning Slot Machine Reveal Card styling */
+.chest-card-reveal {
+  perspective: 1000px;
+  width: 220px;
+  height: 280px;
+}
+
+.spinner-card {
+  width: 100%;
+  height: 100%;
+  background: rgba(15, 15, 10, 0.95);
+  border: 2px solid var(--neon-yellow);
+  box-shadow: 0 0 25px rgba(255, 204, 0, 0.4);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+  transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.spinner-card.spinning {
+  animation: spin-slot 0.15s linear infinite;
+}
+
+.spinner-card.reveal {
+  animation: card-reveal-bounce 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.spinner-card.evolved {
+  border-color: var(--neon-magenta);
+  box-shadow: 0 0 35px rgba(255, 0, 255, 0.6);
+  background: linear-gradient(135deg, rgba(30, 10, 40, 0.95), rgba(10, 20, 40, 0.95));
+}
+
+.spinner-card.evolved .upgrade-title {
+  color: var(--neon-magenta);
+  text-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
+}
+
+/* Spinner Animations */
+@keyframes spin-slot {
+  0% {
+    transform: rotateX(0deg) scale(0.9);
+    filter: blur(2px);
+  }
+  100% {
+    transform: rotateX(360deg) scale(0.9);
+    filter: blur(2px);
+  }
+}
+
+@keyframes card-reveal-bounce {
+  0% {
+    transform: scale(0.3) rotate(15deg);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.1) rotate(-5deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.0) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes chest-spin-glow {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

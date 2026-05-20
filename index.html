@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <title>PANZER FURY: NEON EVOLUTION</title>
+    <meta name="description" content="A WW2-themed Bullet Heaven game with crazy sci-fi evolved weapons, slot limitations, and chest spinner reward system. Built in high-fidelity glassmorphism.">
+    
+    <!-- Google Fonts: Outfit (Aggressive Modern Military) & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <!-- Main Game Canvas -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- UI Overlay Containers -->
+    <div id="ui-container">
+      
+      <!-- 1. Main Menu Screen -->
+      <div id="menu-screen" class="overlay-screen">
+        <div class="menu-box glass">
+          <div class="military-tag">COMBAT PROTOCOL v1.1.0</div>
+          <h1 class="game-title">PANZER FURY<br><span class="subtitle">NEON EVOLUTION</span></h1>
+          <p class="game-desc">
+            Survive waves of WW2 units. Choose your weapons and passives carefully: slots are limited to 3 weapons and 3 passives, and specific combos trigger evolved sci-fi weapons!
+          </p>
+          
+          <div class="controls-guide">
+            <div class="guide-item">
+              <span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span>
+              <span class="guide-text">or Arrows to pilot tank</span>
+            </div>
+            <div class="guide-item">
+              <span class="badge">AUTO-AIM</span>
+              <span class="guide-text">Weapons lock on to range bounds</span>
+            </div>
+            <div class="guide-item">
+              <span class="key">P</span>
+              <span class="guide-text">to Pause / Resume</span>
+            </div>
+          </div>
+
+          <button id="btn-start" class="btn btn-primary btn-glow">DEPLOY VEHICLE</button>
+          
+          <button id="btn-menu-mute" class="btn btn-secondary mute-btn">
+            <span class="mute-icon">🔊</span> Sound: ON
+          </button>
+        </div>
+      </div>
+
+      <!-- 1.5. Starting Weapon Selection Screen -->
+      <div id="weapon-select-screen" class="overlay-screen hidden">
+        <div class="menu-box glass weapon-select-box">
+          <div class="military-tag">WEAPON INTEGRATION SYSTEMS</div>
+          <h2>SELECT STARTING ARMAMENT</h2>
+          <p class="select-desc">Choose a weapon pattern to mount onto your chassis for deployment:</p>
+          <div id="starting-weapon-options" class="upgrades-container">
+            <!-- Starting class cards generated dynamically -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. HUD Screen (Playing overlay) -->
+      <div id="hud" class="hud-overlay hidden">
+        <!-- Top Full-Width XP Bar -->
+        <div id="xp-bar-container" class="glass-bar">
+          <div id="xp-fill" class="bar-fill xp-fill-color"></div>
+          <span id="xp-text" class="bar-label">Level 1 (0%)</span>
+        </div>
+
+        <!-- Upper Status Indicators -->
+        <div class="hud-header">
+          <div class="hud-stat-box glass">
+            <span class="stat-lbl">SCORE</span>
+            <span id="score-val" class="stat-val">0</span>
+          </div>
+          
+          <div class="hud-center-timer glass">
+            <span id="time-val">00:00</span>
+          </div>
+
+          <div class="hud-stat-box glass">
+            <span class="stat-lbl">KILLS</span>
+            <span id="kills-val" class="stat-val">0</span>
+          </div>
+        </div>
+
+        <!-- Left Bottom: HP & Shield Bars -->
+        <div class="hud-bottom-left">
+          <!-- HP Bar -->
+          <div id="hp-bar" class="hud-bar-container glass-bar">
+            <div class="bar-icon-label">❤️ HP</div>
+            <div class="bar-frame">
+              <div id="hp-fill" class="bar-fill hp-fill-color" style="width: 100%;"></div>
+            </div>
+            <span id="hp-text" class="bar-values">100/100</span>
+          </div>
+
+          <!-- Shield Bar (Initially hidden until evolved) -->
+          <div id="shield-bar" class="hud-bar-container glass-bar" style="display: none;">
+            <div class="bar-icon-label">🛡️ SHIELD</div>
+            <div class="bar-frame">
+              <div id="shield-fill" class="bar-fill shield-fill-color" style="width: 100%;"></div>
+            </div>
+            <span id="shield-text" class="bar-values">Plasma Active</span>
+          </div>
+        </div>
+
+        <!-- Right Bottom: Active Weapons List -->
+        <div class="hud-bottom-right">
+          <div class="weapons-header">ARSENAL INTEGRATION</div>
+          <div class="slots-indicator">
+            <span class="slot-tag">WEAPONS: <span id="weapon-slots-val">1/3</span></span>
+            <span class="slot-tag">PASSIVES: <span id="passive-slots-val">0/3</span></span>
+          </div>
+          <div id="weapons-list" class="weapons-grid">
+            <!-- Populated dynamically by Game.ts -->
+          </div>
+        </div>
+
+        <!-- Top-Right Corner Mute Control -->
+        <button id="btn-hud-mute" class="hud-mute-btn glass">🔊</button>
+      </div>
+
+      <!-- 3. Pause Screen -->
+      <div id="pause-screen" class="overlay-screen hidden">
+        <div class="menu-box glass pause-box">
+          <h2>TACTICAL PAUSE</h2>
+          <p>Pilot has requested combat standby.</p>
+          <button id="btn-resume" class="btn btn-primary">RESUME OPERATION</button>
+        </div>
+      </div>
+
+      <!-- 4. Game Over Screen -->
+      <div id="gameover-screen" class="overlay-screen hidden">
+        <div class="menu-box glass gameover-box">
+          <div class="critical-tag">COMMUNICATION LOST</div>
+          <h2 class="gameover-title">VEHICLE DESTROYED</h2>
+          <p>Armored frame suffered critical damage.</p>
+          
+          <div class="final-stats glass">
+            <div id="final-score" class="final-stat-row">Score: 0</div>
+            <div id="final-kills" class="final-stat-row">Kills: 0</div>
+            <div id="final-time" class="final-stat-row">Time Survived: 00:00</div>
+          </div>
+
+          <button id="btn-restart" class="btn btn-primary btn-glow">RE-DEPLOY</button>
+        </div>
+      </div>
+
+      <!-- 5. Level Up Screen -->
+      <div id="levelup-screen" class="overlay-screen hidden">
+        <div class="levelup-box">
+          <h2 class="levelup-title">UPGRADE DETECTED</h2>
+          <p class="levelup-subtitle">Choose a modification to integrate into the chassis</p>
+          
+          <div id="upgrade-options-container" class="upgrades-container">
+            <!-- Upgrades choices cards injected dynamically by UpgradeManager.ts -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. Treasure Chest Spinner Screen -->
+      <div id="chest-screen" class="overlay-screen hidden">
+        <div class="levelup-box chest-box glass">
+          <div class="chest-glow-effect"></div>
+          <h2 class="chest-title">💥 SUPPLY DROP ACQUIRED 💥</h2>
+          <p class="chest-subtitle">Accessing weapons payload...</p>
+          
+          <div class="chest-spinner-container">
+            <div id="chest-card-spinner" class="chest-card-reveal">
+              <!-- Flashing/spinning cards go here -->
+            </div>
+          </div>
+          
+          <button id="btn-chest-accept" class="btn btn-primary btn-glow">INTEGRATE MODULE</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Script Entry -->
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
